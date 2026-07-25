@@ -1,0 +1,25 @@
+# Maps classifier tier predictions to actual model configs.
+# Edit this file to change routing behavior without touching code.
+
+routing:
+  1:
+    model: groq_cheap
+    description: "Simple tasks - extraction, reformatting, basic Q&A"
+  2:
+    model: groq_cheap
+    description: "Moderate tasks - summarization, classification, structured analysis"
+  3:
+    model: groq_premium
+    description: "Complex tasks - multi-step reasoning, creative generation, nuanced judgment"
+
+verification:
+  sample_rate: 1.0  # Start at 100% to gather data; taper down later (see brief)
+  divergence_threshold: 0.3  # Placeholder - defined precisely in Phase 3
+
+models:
+  groq_cheap:
+    provider: groq
+    model_id: llama-3.1-8b-instant
+  groq_premium:
+    provider: groq
+    model_id: llama-3.3-70b-versatile
