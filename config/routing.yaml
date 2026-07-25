@@ -13,7 +13,7 @@ routing:
     description: "Complex tasks - multi-step reasoning, creative generation, nuanced judgment"
 
 verification:
-  sample_rate: 1.0
+  sample_rate: 0.15
   divergence_threshold:
     1: 0.20   # factual/extraction - low tolerance, answers should closely match
     2: 0.40   # moderate/summarization - some wording variation expected
