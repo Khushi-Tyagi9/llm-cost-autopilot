@@ -1,0 +1,182 @@
+[
+  {
+    "tier": 1,
+    "tfidf_escalate": false,
+    "llm_escalate": false,
+    "judge_cost": 9.94e-06
+  },
+  {
+    "tier": 3,
+    "tfidf_escalate": false,
+    "llm_escalate": false,
+    "judge_cost": 0.00010244
+  },
+  {
+    "tier": 2,
+    "tfidf_escalate": true,
+    "llm_escalate": false,
+    "judge_cost": 1.746e-05
+  },
+  {
+    "tier": 3,
+    "tfidf_escalate": false,
+    "llm_escalate": false,
+    "judge_cost": 9.506e-05
+  },
+  {
+    "tier": 2,
+    "tfidf_escalate": false,
+    "llm_escalate": false,
+    "judge_cost": 8.786e-05
+  },
+  {
+    "tier": 2,
+    "tfidf_escalate": false,
+    "llm_escalate": false,
+    "judge_cost": 0.00011991000000000001
+  },
+  {
+    "tier": 3,
+    "tfidf_escalate": false,
+    "llm_escalate": false,
+    "judge_cost": 8.631e-05
+  },
+  {
+    "tier": 1,
+    "tfidf_escalate": true,
+    "llm_escalate": false,
+    "judge_cost": 1.356e-05
+  },
+  {
+    "tier": 1,
+    "tfidf_escalate": true,
+    "llm_escalate": false,
+    "judge_cost": 5.711e-05
+  },
+  {
+    "tier": 1,
+    "tfidf_escalate": false,
+    "llm_escalate": false,
+    "judge_cost": 5.831e-05
+  },
+  {
+    "tier": 2,
+    "tfidf_escalate": false,
+    "llm_escalate": false,
+    "judge_cost": 4.3660000000000005e-05
+  },
+  {
+    "tier": 1,
+    "tfidf_escalate": false,
+    "llm_escalate": false,
+    "judge_cost": 8.11e-06
+  },
+  {
+    "tier": 2,
+    "tfidf_escalate": false,
+    "llm_escalate": false,
+    "judge_cost": 7.059e-05
+  },
+  {
+    "tier": 1,
+    "tfidf_escalate": false,
+    "llm_escalate": false,
+    "judge_cost": 8.160000000000001e-06
+  },
+  {
+    "tier": 2,
+    "tfidf_escalate": false,
+    "llm_escalate": false,
+    "judge_cost": 2.061e-05
+  },
+  {
+    "tier": 2,
+    "tfidf_escalate": true,
+    "llm_escalate": false,
+    "judge_cost": 1.134e-05
+  },
+  {
+    "tier": 1,
+    "tfidf_escalate": true,
+    "llm_escalate": false,
+    "judge_cost": 4.551e-05
+  },
+  {
+    "tier": 3,
+    "tfidf_escalate": false,
+    "llm_escalate": false,
+    "judge_cost": 7.906e-05
+  },
+  {
+    "tier": 3,
+    "tfidf_escalate": false,
+    "llm_escalate": false,
+    "judge_cost": 5.0390000000000004e-05
+  },
+  {
+    "tier": 1,
+    "tfidf_escalate": true,
+    "llm_escalate": false,
+    "judge_cost": 8.66e-06
+  },
+  {
+    "tier": 1,
+    "tfidf_escalate": true,
+    "llm_escalate": false,
+    "judge_cost": 1.1210000000000001e-05
+  },
+  {
+    "tier": 1,
+    "tfidf_escalate": false,
+    "llm_escalate": false,
+    "judge_cost": 7.91e-06
+  },
+  {
+    "tier": 3,
+    "tfidf_escalate": false,
+    "llm_escalate": false,
+    "judge_cost": 7.991e-05
+  },
+  {
+    "tier": 3,
+    "tfidf_escalate": false,
+    "llm_escalate": false,
+    "judge_cost": 1.876e-05
+  },
+  {
+    "tier": 1,
+    "tfidf_escalate": true,
+    "llm_escalate": false,
+    "judge_cost": 5.041e-05
+  },
+  {
+    "tier": 2,
+    "tfidf_escalate": false,
+    "llm_escalate": false,
+    "judge_cost": 5.8360000000000004e-05
+  },
+  {
+    "tier": 3,
+    "tfidf_escalate": false,
+    "llm_escalate": false,
+    "judge_cost": 7.586000000000001e-05
+  },
+  {
+    "tier": 3,
+    "tfidf_escalate": false,
+    "llm_escalate": false,
+    "judge_cost": 7.854e-05
+  },
+  {
+    "tier": 3,
+    "tfidf_escalate": false,
+    "llm_escalate": false,
+    "judge_cost": 0.00011946000000000001
+  },
+  {
+    "tier": 1,
+    "tfidf_escalate": true,
+    "llm_escalate": false,
+    "judge_cost": 1.484e-05
+  }
+]
