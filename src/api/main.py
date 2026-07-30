@@ -6,6 +6,7 @@ import numpy as np
 import joblib
 import yaml
 from fastapi import FastAPI, HTTPException
+from groq import RateLimitError
 from pydantic import BaseModel
 
 from src.classifier.features import featurize
@@ -58,13 +59,24 @@ def create_completion(request: CompletionRequest):
     tier = predict_tier(request.prompt)
     model_config = resolve_model_for_tier(tier, config)
 
-    response = send_request(request.prompt, model_config)
+    try:
+        response = send_request(request.prompt, model_config)
+    except RateLimitError:
+        raise HTTPException(
+            status_code=429,
+            detail="Provider rate limit reached. Please retry shortly."
+        )
 
     verification = None
     sample_rate = config["verification"]["sample_rate"]
     if should_verify(sample_rate):
         threshold = config["verification"]["divergence_threshold"][tier]
-        verification = verify_response(request.prompt, response.text, GROQ_PREMIUM, threshold)
+        try:
+            verification = verify_response(request.prompt, response.text, GROQ_PREMIUM, threshold)
+        except RateLimitError:
+            # Verification is a bonus check - if it fails due to rate limits,
+            # still return the primary answer rather than failing the whole request
+            verification = None
 
     log_request(tier, response, verification, request.prompt)
 

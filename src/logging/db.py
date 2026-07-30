@@ -39,10 +39,10 @@ def init_db():
                 input_tokens INTEGER NOT NULL,
                 output_tokens INTEGER NOT NULL,
                 verified INTEGER NOT NULL DEFAULT 0,
-                similarity REAL,
-                divergence REAL,
+                judge_verdict TEXT,
                 escalated INTEGER NOT NULL DEFAULT 0,
-                premium_cost REAL
+                premium_cost REAL,
+                judge_cost REAL
             )
         """)
         conn.commit()
@@ -58,7 +58,7 @@ def log_request(tier: int, response, verification: dict | None, prompt: str):
             INSERT INTO requests (
                 timestamp, prompt_hash, tier, model_id, provider,
                 cost, latency, input_tokens, output_tokens,
-                verified, similarity, divergence, escalated, premium_cost
+                verified, judge_verdict, escalated, premium_cost, judge_cost
             ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
         """, (
             time.time(),
@@ -71,9 +71,9 @@ def log_request(tier: int, response, verification: dict | None, prompt: str):
             response.input_tokens,
             response.output_tokens,
             1 if verification else 0,
-            verification["similarity"] if verification else None,
-            verification["divergence"] if verification else None,
+            verification["judge_verdict"] if verification else None,
             1 if (verification and verification["escalate"]) else 0,
             verification["premium_cost"] if verification else None,
+            verification["judge_cost"] if verification else None,
         ))
         conn.commit()
