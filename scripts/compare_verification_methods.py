@@ -2,13 +2,14 @@
 Runs the same set of prompts through both TF-IDF and LLM-as-judge
 verification methods, to compare escalation rates and cost side-by-side.
 
-Resilient to rate limits: saves partial results as it goes and stops
-cleanly if the API becomes unavailable, instead of losing progress.
+Resilient to rate limits: saves partial results as it goes, paces
+requests to avoid per-minute limits, and stops cleanly on any API error.
 """
 import json
 import os
+import time
 import pandas as pd
-from groq import RateLimitError
+from groq import RateLimitError, APIStatusError
 
 from src.models.config import GROQ_CHEAP, GROQ_PREMIUM
 from src.models.router_client import send_request
@@ -17,6 +18,7 @@ from src.verification.llm_judge import llm_judge_verdict
 from src.router.config_loader import load_routing_config
 
 RESULTS_FILE = "data/verification_comparison_results.json"
+DELAY_BETWEEN_PROMPTS = 3  # seconds - stays under per-minute token limits
 
 
 def load_sample_prompts(n=30):
@@ -69,7 +71,7 @@ def main():
 
     for i, (prompt, tier) in enumerate(samples):
         if i < already_done:
-            continue  # skip prompts already processed in a prior run
+            continue
 
         try:
             cheap = send_request(prompt, GROQ_CHEAP)
@@ -89,14 +91,16 @@ def main():
                 "judge_cost": judge_result["judge_cost"],
             }
             results.append(result)
-            save_results(results)  # save after every single result
+            save_results(results)
 
             agreement_marker = "match" if tfidf_escalate == llm_escalate else "DISAGREE"
             print(f"[{i+1}] Tier {tier} | TF-IDF: {'ESCALATE' if tfidf_escalate else 'ok':9} "
                   f"| LLM-judge: {'ESCALATE' if llm_escalate else 'ok':9} | {agreement_marker}")
 
-        except RateLimitError as e:
-            print(f"\nRate limit hit at prompt {i+1}/{len(samples)}. Stopping cleanly.")
+            time.sleep(DELAY_BETWEEN_PROMPTS)
+
+        except (RateLimitError, APIStatusError) as e:
+            print(f"\nRate/API limit hit at prompt {i+1}/{len(samples)}. Stopping cleanly.")
             print(f"Progress saved to {RESULTS_FILE} - rerun this script later to resume.")
             print_summary(results)
             return

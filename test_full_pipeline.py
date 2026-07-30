@@ -48,7 +48,7 @@ def handle_request(prompt: str):
         from src.models.config import GROQ_PREMIUM
         threshold = thresholds[tier]
         verification = verify_response(prompt, response.text, GROQ_PREMIUM, threshold)
-        print(f"  Verified - similarity: {verification['similarity']:.2f} | escalate: {verification['escalate']}")
+        print(f"  Verified - judge verdict: {verification['judge_verdict']} | escalate: {verification['escalate']}")
 
     log_request(tier, response, verification, prompt)
     return response, verification

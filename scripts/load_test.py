@@ -18,7 +18,7 @@ import pandas as pd
 
 API_URL = "http://localhost:8000/v1/completions"
 TARGET_COUNT = int(sys.argv[1]) if len(sys.argv) > 1 else 500
-DELAY_SECONDS = 0.3  # be gentle on Groq's free tier rate limits
+DELAY_SECONDS = 2.0  # be gentle on Groq's free tier rate limits
 
 
 def load_prompts():
@@ -51,6 +51,10 @@ def run_load_test():
             response = requests.post(API_URL, json={"prompt": prompt}, timeout=30)
             if response.status_code == 200:
                 success_count += 1
+            elif response.status_code == 429:
+                error_count += 1
+                print(f"  [{i}] Rate limited - backing off 15s")
+                time.sleep(15)
             else:
                 error_count += 1
                 print(f"  [{i}] Error {response.status_code}: {response.text[:100]}")
