@@ -1,10 +1,5 @@
-"""
-LLM-as-judge verification: asks the cheap model to compare two answers
-for the same prompt and decide if they're substantively equivalent.
-Cheaper than using premium as judge, since it's just a comparison task.
-"""
 from src.models.router_client import send_request
-from src.models.config import GROQ_CHEAP
+from src.models.config import GROQ_PREMIUM
 
 
 JUDGE_PROMPT_TEMPLATE = """You are comparing two AI-generated answers to the same question, to check if they are substantively equivalent (same correct information/quality), even if worded differently.
@@ -23,7 +18,7 @@ def llm_judge_verdict(prompt: str, answer_a: str, answer_b: str) -> dict:
     judge_prompt = JUDGE_PROMPT_TEMPLATE.format(
         prompt=prompt, answer_a=answer_a, answer_b=answer_b
     )
-    response = send_request(judge_prompt, GROQ_CHEAP)
+    response = send_request(judge_prompt, GROQ_PREMIUM)
     verdict_text = response.text.strip().upper()
     escalate = "DIVERGE" in verdict_text
 
