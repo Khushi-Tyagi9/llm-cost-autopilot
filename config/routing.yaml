@@ -23,6 +23,12 @@ models:
   groq_cheap:
     provider: groq
     model_id: llama-3.1-8b-instant
+    cost_per_input_token: 0.00000005
+    cost_per_output_token: 0.00000008
+    quality_tier: 1
   groq_premium:
     provider: groq
     model_id: llama-3.3-70b-versatile
+    cost_per_input_token: 0.00000059
+    cost_per_output_token: 0.00000079
+    quality_tier: 3

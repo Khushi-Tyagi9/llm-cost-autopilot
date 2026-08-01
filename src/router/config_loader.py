@@ -1,5 +1,9 @@
 """
 Loads routing.yaml and resolves tier -> ModelConfig.
+
+Builds ModelConfig objects directly from the YAML's model definitions,
+so adding a new model (any provider, any pricing) only requires editing
+routing.yaml - no Python changes needed.
 """
 import yaml
 
@@ -12,14 +16,16 @@ def load_routing_config(path="config/routing.yaml"):
 
 
 def build_model_configs(routing_config: dict) -> dict:
-    """Returns {name: ModelConfig} for every model defined in the YAML."""
+    """Returns {name: ModelConfig} built directly from the YAML definitions."""
     configs = {}
     for name, spec in routing_config["models"].items():
-        # Pricing lives in src/models/config.py's constants; look them up
-        # by matching model_id so we don't duplicate pricing in two places.
-        from src.models.config import GROQ_CHEAP, GROQ_PREMIUM
-        known = {GROQ_CHEAP.model_id: GROQ_CHEAP, GROQ_PREMIUM.model_id: GROQ_PREMIUM}
-        configs[name] = known[spec["model_id"]]
+        configs[name] = ModelConfig(
+            provider=spec["provider"],
+            model_id=spec["model_id"],
+            cost_per_input_token=spec["cost_per_input_token"],
+            cost_per_output_token=spec["cost_per_output_token"],
+            quality_tier=spec.get("quality_tier", 0),
+        )
     return configs
 
 
