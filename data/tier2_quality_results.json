@@ -1,0 +1,152 @@
+[
+  {
+    "prompt_preview": "Compare in-person and online college degrees in terms of cost and flexibility.",
+    "judge_verdict": "MATCH",
+    "escalate": false
+  },
+  {
+    "prompt_preview": "Summarize the main argument of this opinion piece: We have turned human existenc",
+    "judge_verdict": "MATCH",
+    "escalate": false
+  },
+  {
+    "prompt_preview": "Jobs in India after NIFT",
+    "judge_verdict": "MATCH",
+    "escalate": false
+  },
+  {
+    "prompt_preview": "Resolve OpenAI Python authentication errors",
+    "judge_verdict": "MATCH",
+    "escalate": false
+  },
+  {
+    "prompt_preview": "Summarize this paragraph in 2 sentences: We believe that what you read and write",
+    "judge_verdict": "MATCH",
+    "escalate": false
+  },
+  {
+    "prompt_preview": "Classify this support message by urgency: low, medium, high: \"My account has bee",
+    "judge_verdict": "MATCH",
+    "escalate": false
+  },
+  {
+    "prompt_preview": "Summarize the pros and cons of monolithic vs serverless deployment for a small t",
+    "judge_verdict": "MATCH",
+    "escalate": false
+  },
+  {
+    "prompt_preview": "What about reaching L6 in the Product Management field?",
+    "judge_verdict": "MATCH",
+    "escalate": false
+  },
+  {
+    "prompt_preview": "Summarize this customer complaint and identify the core issue: Dear Customer Sup",
+    "judge_verdict": "MATCH",
+    "escalate": false
+  },
+  {
+    "prompt_preview": "Organize these interview questions by category: behavioral, technical, situation",
+    "judge_verdict": "MATCH",
+    "escalate": false
+  },
+  {
+    "prompt_preview": "Help me write an email to a hackathon organizer",
+    "judge_verdict": "DIVERGE",
+    "escalate": true
+  },
+  {
+    "prompt_preview": "Summarize the main causes of the 2008 financial crisis in 3 sentences.",
+    "judge_verdict": "MATCH",
+    "escalate": false
+  },
+  {
+    "prompt_preview": "Analyze my disk usage and tell me what to delete",
+    "judge_verdict": "MATCH",
+    "escalate": false
+  },
+  {
+    "prompt_preview": "Spot round statistics for FC/AD/FD (NRI) in top 7 NIFTs",
+    "judge_verdict": "DIVERGE",
+    "escalate": true
+  },
+  {
+    "prompt_preview": "Analyze the sentiment of this tweet: \"Can't believe how bad this update is, ever",
+    "judge_verdict": "MATCH",
+    "escalate": false
+  },
+  {
+    "prompt_preview": "Summarize the plot of \"The Great Gatsby\" in 3 sentences.",
+    "judge_verdict": "MATCH",
+    "escalate": false
+  },
+  {
+    "prompt_preview": "Break down this recipe into prep steps and cook steps: Quick Garlic Butter Shrim",
+    "judge_verdict": "MATCH",
+    "escalate": false
+  },
+  {
+    "prompt_preview": "Summarize this product's key features into 3 bullet points: Designed for uncompr",
+    "judge_verdict": "DIVERGE",
+    "escalate": true
+  },
+  {
+    "prompt_preview": "Summarize what changed between two versions of a changelog.",
+    "judge_verdict": "MATCH",
+    "escalate": false
+  },
+  {
+    "prompt_preview": "I am changing my internship role to Software Developer. What should I write?",
+    "judge_verdict": "DIVERGE",
+    "escalate": true
+  },
+  {
+    "prompt_preview": "Classify this support ticket as billing, technical, or account issue: \"I was cha",
+    "judge_verdict": "MATCH",
+    "escalate": false
+  },
+  {
+    "prompt_preview": "Explain what work I could do as a Software Developer Intern at Unicorn Designs",
+    "judge_verdict": "MATCH",
+    "escalate": false
+  },
+  {
+    "prompt_preview": "How should I structure a production-grade FastAPI project?",
+    "judge_verdict": "MATCH",
+    "escalate": false
+  },
+  {
+    "prompt_preview": "Classify this support ticket as urgent or non-urgent: \"The app crashes every tim",
+    "judge_verdict": "MATCH",
+    "escalate": false
+  },
+  {
+    "prompt_preview": "Compare the tradeoffs between SQL and NoSQL databases for a small e-commerce app",
+    "judge_verdict": "MATCH",
+    "escalate": false
+  },
+  {
+    "prompt_preview": "Classify this news headline by topic: politics, sports, or technology: \"Local te",
+    "judge_verdict": "MATCH",
+    "escalate": false
+  },
+  {
+    "prompt_preview": "How long does it take for an L1 engineer to reach L6?",
+    "judge_verdict": "DIVERGE",
+    "escalate": true
+  },
+  {
+    "prompt_preview": "Suggest an AI project to impress the SuperKalam internship recruiters",
+    "judge_verdict": "DIVERGE",
+    "escalate": true
+  },
+  {
+    "prompt_preview": "Summarize the key differences between supervised and unsupervised learning.",
+    "judge_verdict": "MATCH",
+    "escalate": false
+  },
+  {
+    "prompt_preview": "Explain RAG architecture with an example",
+    "judge_verdict": "DIVERGE",
+    "escalate": true
+  }
+]
