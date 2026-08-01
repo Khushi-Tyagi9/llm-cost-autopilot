@@ -8,6 +8,7 @@ import yaml
 from fastapi import FastAPI, HTTPException
 from groq import RateLimitError
 from pydantic import BaseModel
+from src.classifier.features import is_factual_risk
 
 from src.classifier.features import featurize
 from src.router.config_loader import load_routing_config, resolve_model_for_tier
@@ -67,16 +68,29 @@ def create_completion(request: CompletionRequest):
             detail="Provider rate limit reached. Please retry shortly."
         )
 
+    from src.classifier.features import contains_hedging_language
+    is_risky = is_factual_risk(request.prompt) or contains_hedging_language(response.text)
     verification = None
-    sample_rate = config["verification"]["sample_rate"]
-    if should_verify(sample_rate):
-        threshold = config["verification"]["divergence_threshold"][tier]
+
+    if is_risky:
         try:
+            threshold = config["verification"]["divergence_threshold"][tier]
             verification = verify_response(request.prompt, response.text, GROQ_PREMIUM, threshold)
+            if verification["escalate"]:
+                response.text = verification["premium_text"]
+                response.model_id = GROQ_PREMIUM.model_id
+                response.provider = GROQ_PREMIUM.provider
+                response.cost += verification["premium_cost"] + verification["judge_cost"]
         except RateLimitError:
-            # Verification is a bonus check - if it fails due to rate limits,
-            # still return the primary answer rather than failing the whole request
             verification = None
+    else:
+        sample_rate = config["verification"]["sample_rate"]
+        if should_verify(sample_rate):
+            threshold = config["verification"]["divergence_threshold"][tier]
+            try:
+                verification = verify_response(request.prompt, response.text, GROQ_PREMIUM, threshold)
+            except RateLimitError:
+                verification = None
 
     log_request(tier, response, verification, request.prompt)
 
