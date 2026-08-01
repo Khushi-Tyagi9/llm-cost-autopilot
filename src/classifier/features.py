@@ -42,7 +42,31 @@ HEDGING_PHRASES = [
     "recommend checking", "note that this", "please note that",
     "i'm not able to", "cannot confirm", "can't confirm",
 ]
+UNGROUNDED_FACT_KEYWORDS = [
+    "statistics", "stats", "cutoff", "percentage", "how many",
+    "ranking", "rank", "spot round", "admission", "seats",
+    "average", "population of", "release date", "score of",
+    "results of", "when did", "who is the", "how much does",
+]
 
+
+def is_ungrounded_factual_query(text: str) -> bool:
+    """Distinguishes queries asking the model to recall specific facts
+    from its own training data (higher fabrication risk) from queries
+    that provide source material to work from, like a pasted article
+    or document (lower fabrication risk, since the model is processing
+    given content rather than recalling unaided).
+
+    A query is treated as 'grounded' (safer) if it includes a
+    substantial block of provided text to work from - long pasted
+    content is the strongest signal the model has something real to
+    reference rather than needing to recall facts unaided.
+    """
+    has_long_pasted_content = has_long_context(text)
+    if has_long_pasted_content:
+        return False  # grounded - has source material, lower risk
+
+    return count_keywords(text, UNGROUNDED_FACT_KEYWORDS) >= 1
 
 def contains_hedging_language(text: str) -> bool:
     """Checks if a model's ANSWER (not the question) contains

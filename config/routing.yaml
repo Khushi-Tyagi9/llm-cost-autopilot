@@ -7,7 +7,10 @@ routing:
     description: "Simple tasks - extraction, reformatting, basic Q&A"
   2:
     model: groq_cheap
-    description: "Moderate tasks - summarization, classification, structured analysis"
+    description: "Moderate tasks (grounded) - summarization, classification of provided content"
+  "2b":
+    model: groq_premium
+    description: "Moderate tasks (ungrounded) - recall of specific facts/statistics not provided in the prompt"
   3:
     model: groq_premium
     description: "Complex tasks - multi-step reasoning, creative generation, nuanced judgment"

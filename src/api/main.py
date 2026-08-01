@@ -8,9 +8,7 @@ import yaml
 from fastapi import FastAPI, HTTPException
 from groq import RateLimitError
 from pydantic import BaseModel
-from src.classifier.features import is_factual_risk
-
-from src.classifier.features import featurize
+from src.classifier.features import featurize, is_ungrounded_factual_query
 from src.router.config_loader import load_routing_config, resolve_model_for_tier
 from src.models.router_client import send_request
 from src.models.config import GROQ_PREMIUM
@@ -57,8 +55,17 @@ def create_completion(request: CompletionRequest):
         raise HTTPException(status_code=400, detail="Prompt cannot be empty")
 
     config = load_routing_config()
+
     tier = predict_tier(request.prompt)
-    model_config = resolve_model_for_tier(tier, config)
+
+    # Tier 2 gets split at routing time: ungrounded factual queries
+    # (higher fabrication risk) go straight to premium; grounded/other
+    # Tier 2 queries stay on the cheap tier as before.
+    routing_tier = tier
+    if tier == 2 and is_ungrounded_factual_query(request.prompt):
+        routing_tier = "2b"
+
+    model_config = resolve_model_for_tier(routing_tier, config)
 
     try:
         response = send_request(request.prompt, model_config)
@@ -68,29 +75,14 @@ def create_completion(request: CompletionRequest):
             detail="Provider rate limit reached. Please retry shortly."
         )
 
-    from src.classifier.features import contains_hedging_language
-    is_risky = is_factual_risk(request.prompt) or contains_hedging_language(response.text)
     verification = None
-
-    if is_risky:
+    sample_rate = config["verification"]["sample_rate"]
+    if should_verify(sample_rate):
+        threshold = config["verification"]["divergence_threshold"].get(tier, 0.4)
         try:
-            threshold = config["verification"]["divergence_threshold"][tier]
             verification = verify_response(request.prompt, response.text, GROQ_PREMIUM, threshold)
-            if verification["escalate"]:
-                response.text = verification["premium_text"]
-                response.model_id = GROQ_PREMIUM.model_id
-                response.provider = GROQ_PREMIUM.provider
-                response.cost += verification["premium_cost"] + verification["judge_cost"]
         except RateLimitError:
             verification = None
-    else:
-        sample_rate = config["verification"]["sample_rate"]
-        if should_verify(sample_rate):
-            threshold = config["verification"]["divergence_threshold"][tier]
-            try:
-                verification = verify_response(request.prompt, response.text, GROQ_PREMIUM, threshold)
-            except RateLimitError:
-                verification = None
 
     log_request(tier, response, verification, request.prompt)
 
