@@ -27,21 +27,6 @@ CREATIVE_KEYWORDS = ["write a story", "write a poem", "write a screenplay",
                       "write a dialogue", "write a persuasive", "write a scene",
                       "write a satirical", "write an opening", "write a nuanced",
                       "write resume points", "write ats-friendly"]
-FACTUAL_RISK_KEYWORDS = [
-    "statistics", "stats", "cutoff", "percentage", "percent", "ranking",
-    "rank", "how many", "exact number", "precise", "data on",
-    "spot round", "admission", "seats available", "average salary",
-    "population of", "release date", "score of", "results of",
-]
-HEDGING_PHRASES = [
-    "i don't have", "i do not have", "i'm unable to", "i am unable to",
-    "i cannot verify", "i can't verify", "i don't know", "not available",
-    "unable to find", "unable to access", "no information on",
-    "i couldn't find", "i could not find", "may not be accurate",
-    "may not be up-to-date", "may not be up to date", "please verify",
-    "recommend checking", "note that this", "please note that",
-    "i'm not able to", "cannot confirm", "can't confirm",
-]
 UNGROUNDED_FACT_KEYWORDS = [
     "statistics", "stats", "cutoff", "percentage", "how many",
     "ranking", "rank", "spot round", "admission", "seats",
@@ -67,23 +52,6 @@ def is_ungrounded_factual_query(text: str) -> bool:
         return False  # grounded - has source material, lower risk
 
     return count_keywords(text, UNGROUNDED_FACT_KEYWORDS) >= 1
-
-def contains_hedging_language(text: str) -> bool:
-    """Checks if a model's ANSWER (not the question) contains
-    self-reported uncertainty. A model saying 'I don't have data on
-    this' and then providing specific numbers anyway is a strong
-    fabrication signal - this catches that pattern directly from
-    the model's own words, rather than guessing from the question."""
-    text_lower = text.lower()
-    return any(phrase in text_lower for phrase in HEDGING_PHRASES)
-
-def is_factual_risk(text: str) -> bool:
-    """Flags queries asking for specific facts/numbers about narrow
-    topics - a heuristic mitigation for a known, unbounded problem
-    (LLM fabrication on niche factual queries). Does not guarantee
-    detection of all fabrication-prone queries; see README."""
-    text_lower = text.lower()
-    return count_keywords(text, FACTUAL_RISK_KEYWORDS) >= 1
 
 
 def count_keywords(text: str, keywords: list[str]) -> int:

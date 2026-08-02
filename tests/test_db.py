@@ -79,6 +79,7 @@ class TestInitDb:
             "id", "timestamp", "prompt_hash", "tier", "model_id", "provider",
             "cost", "latency", "input_tokens", "output_tokens", "verified",
             "judge_verdict", "escalated", "premium_cost", "judge_cost",
+            "routing_override",
         }
         assert expected.issubset(columns)
 

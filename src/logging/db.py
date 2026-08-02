@@ -42,24 +42,30 @@ def init_db():
                 judge_verdict TEXT,
                 escalated INTEGER NOT NULL DEFAULT 0,
                 premium_cost REAL,
-                judge_cost REAL
+                judge_cost REAL,
+                routing_override TEXT
             )
         """)
         conn.commit()
 
 
-def log_request(tier: int, response, verification: dict | None, prompt: str):
+def log_request(tier: int, response, verification: dict | None, prompt: str, routing_override: str | None = None):
     """
     response: a Response object from send_request()
     verification: dict from verify_response(), or None if not verified
+    routing_override: if the actual routing differed from the classifier's
+    raw tier prediction (e.g. "2b" for ungrounded-factual Tier 2 queries
+    routed to premium), record what override was applied. None if the
+    classifier's tier was used as-is.
     """
     with get_connection() as conn:
         conn.execute("""
             INSERT INTO requests (
                 timestamp, prompt_hash, tier, model_id, provider,
                 cost, latency, input_tokens, output_tokens,
-                verified, judge_verdict, escalated, premium_cost, judge_cost
-            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                verified, judge_verdict, escalated, premium_cost, judge_cost,
+                routing_override
+            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
         """, (
             time.time(),
             _hash_prompt(prompt),
@@ -75,5 +81,6 @@ def log_request(tier: int, response, verification: dict | None, prompt: str):
             1 if (verification and verification["escalate"]) else 0,
             verification["premium_cost"] if verification else None,
             verification["judge_cost"] if verification else None,
+            routing_override,
         ))
         conn.commit()
