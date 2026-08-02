@@ -5,7 +5,7 @@ Run with: uvicorn src.api.main:app --reload
 import numpy as np
 import joblib
 import yaml
-from fastapi import FastAPI, HTTPException
+from fastapi import FastAPI, HTTPException, BackgroundTasks
 from groq import RateLimitError
 from pydantic import BaseModel
 from src.classifier.features import featurize, is_ungrounded_factual_query
@@ -49,8 +49,31 @@ def predict_tier(prompt: str) -> int:
     return int(clf.predict(X)[0])
 
 
+def run_verification_and_log(tier: int, response, request_prompt: str, config: dict):
+    """
+    Runs after the response has already been sent to the user. Verifies
+    (if sampled) and logs the request - none of this blocks the actual
+    response the user receives.
+    """
+    verification = None
+    sample_rate = config["verification"]["sample_rate"]
+
+    # Only Tier 1 and Tier 2 (non-split) get verification - Tier 3 and
+    # Tier 2b already used the premium model directly, so there's no
+    # genuine capability gap left to check (see README for reasoning).
+    if tier in (1, 2):
+        if should_verify(sample_rate):
+            threshold = config["verification"]["divergence_threshold"].get(tier, 0.4)
+            try:
+                verification = verify_response(request_prompt, response.text, GROQ_PREMIUM, threshold)
+            except RateLimitError:
+                verification = None
+
+    log_request(tier, response, verification, request_prompt)
+
+
 @app.post("/v1/completions", response_model=CompletionResponse)
-def create_completion(request: CompletionRequest):
+def create_completion(request: CompletionRequest, background_tasks: BackgroundTasks):
     if not request.prompt or not request.prompt.strip():
         raise HTTPException(status_code=400, detail="Prompt cannot be empty")
 
@@ -58,9 +81,6 @@ def create_completion(request: CompletionRequest):
 
     tier = predict_tier(request.prompt)
 
-    # Tier 2 gets split at routing time: ungrounded factual queries
-    # (higher fabrication risk) go straight to premium; grounded/other
-    # Tier 2 queries stay on the cheap tier as before.
     routing_tier = tier
     if tier == 2 and is_ungrounded_factual_query(request.prompt):
         routing_tier = "2b"
@@ -75,16 +95,9 @@ def create_completion(request: CompletionRequest):
             detail="Provider rate limit reached. Please retry shortly."
         )
 
-    verification = None
-    sample_rate = config["verification"]["sample_rate"]
-    if should_verify(sample_rate):
-        threshold = config["verification"]["divergence_threshold"].get(tier, 0.4)
-        try:
-            verification = verify_response(request.prompt, response.text, GROQ_PREMIUM, threshold)
-        except RateLimitError:
-            verification = None
-
-    log_request(tier, response, verification, request.prompt)
+    # Verification and logging happen AFTER this function returns the
+    # response to the user - they never wait for it.
+    background_tasks.add_task(run_verification_and_log, tier, response, request.prompt, config)
 
     return CompletionResponse(
         text=response.text,
@@ -93,10 +106,9 @@ def create_completion(request: CompletionRequest):
         provider=response.provider,
         cost=response.cost,
         latency=response.latency,
-        verified=verification is not None,
-        escalated=verification["escalate"] if verification else None,
+        verified=False,  # not yet known at response time - see /v1/stats for aggregate verification data
+        escalated=None,
     )
-
 
 @app.get("/v1/models")
 def list_models():
