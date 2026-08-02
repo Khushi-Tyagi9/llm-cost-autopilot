@@ -49,19 +49,11 @@ def predict_tier(prompt: str) -> int:
     return int(clf.predict(X)[0])
 
 
-def run_verification_and_log(tier: int, response, request_prompt: str, config: dict):
-    """
-    Runs after the response has already been sent to the user. Verifies
-    (if sampled) and logs the request - none of this blocks the actual
-    response the user receives.
-    """
+def run_verification_and_log(tier: int, response, request_prompt: str, config: dict, routing_override: str | None = None):
     verification = None
     sample_rate = config["verification"]["sample_rate"]
 
-    # Only Tier 1 and Tier 2 (non-split) get verification - Tier 3 and
-    # Tier 2b already used the premium model directly, so there's no
-    # genuine capability gap left to check (see README for reasoning).
-    if tier in (1, 2):
+    if tier in (1, 2) and routing_override is None:
         if should_verify(sample_rate):
             threshold = config["verification"]["divergence_threshold"].get(tier, 0.4)
             try:
@@ -69,7 +61,7 @@ def run_verification_and_log(tier: int, response, request_prompt: str, config: d
             except RateLimitError:
                 verification = None
 
-    log_request(tier, response, verification, request_prompt)
+    log_request(tier, response, verification, request_prompt, routing_override=routing_override)
 
 
 @app.post("/v1/completions", response_model=CompletionResponse)
@@ -97,7 +89,8 @@ def create_completion(request: CompletionRequest, background_tasks: BackgroundTa
 
     # Verification and logging happen AFTER this function returns the
     # response to the user - they never wait for it.
-    background_tasks.add_task(run_verification_and_log, tier, response, request.prompt, config)
+    override = routing_tier if routing_tier != tier else None
+    background_tasks.add_task(run_verification_and_log, tier, response, request.prompt, config, override)
 
     return CompletionResponse(
         text=response.text,
