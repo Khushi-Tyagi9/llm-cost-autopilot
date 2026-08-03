@@ -6,6 +6,7 @@ import numpy as np
 import joblib
 import yaml
 from fastapi import FastAPI, HTTPException, BackgroundTasks
+from fastapi.responses import JSONResponse
 from groq import RateLimitError
 from pydantic import BaseModel
 from src.classifier.features import featurize, is_ungrounded_factual_query
@@ -150,3 +151,35 @@ def update_routing_config(new_config: dict):
 @app.get("/")
 def root():
     return {"status": "LLM Cost Autopilot is running"}
+
+@app.get("/health")
+def health():
+    """Basic liveness check - is the process running at all."""
+    return {"status": "healthy"}
+
+
+@app.get("/ready")
+def ready():
+    """Readiness check - is the service able to actually serve traffic
+    (classifier loaded, database reachable)."""
+    checks = {"classifier_loaded": False, "database_reachable": False}
+
+    try:
+        checks["classifier_loaded"] = clf is not None
+    except NameError:
+        checks["classifier_loaded"] = False
+
+    try:
+        with get_connection() as conn:
+            conn.execute("SELECT 1")
+        checks["database_reachable"] = True
+    except Exception:
+        checks["database_reachable"] = False
+
+    all_ready = all(checks.values())
+    status_code = 200 if all_ready else 503
+
+    return JSONResponse(
+        status_code=status_code,
+        content={"ready": all_ready, "checks": checks}
+    )

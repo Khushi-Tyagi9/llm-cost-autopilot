@@ -54,14 +54,23 @@ class TestRoot:
 
 
 class TestCompletions:
+    @patch("src.api.main.get_cached_response", return_value=None)
+    @patch("src.api.main.store_cached_response")
     @patch("src.api.main.log_request")
     @patch("src.api.main.verify_response")
     @patch("src.api.main.should_verify", return_value=True)
     @patch("src.api.main.send_request")
     @patch("src.api.main.predict_tier", return_value=2)
     def test_completion_response_does_not_wait_for_verification(
-        self, mock_predict, mock_send, mock_should_verify, mock_verify, mock_log
-    ):
+    self,
+    mock_predict,
+    mock_send,
+    mock_should_verify,
+    mock_verify,
+    mock_log,
+    mock_store_cache,
+    mock_get_cache,
+):
         """Verification now runs as a background task after the response
         is sent, so the immediate API response never carries verified/
         escalated data - those are only available via /v1/stats or the
@@ -95,9 +104,10 @@ class TestCompletions:
         response = client.post("/v1/completions", json={})
         assert response.status_code == 422
 
+    @patch("src.api.main.get_cached_response", return_value=None)
     @patch("src.api.main.predict_tier", return_value=1)
     @patch("src.api.main.send_request")
-    def test_provider_rate_limit_returns_429_not_500(self, mock_send, mock_predict):
+    def test_provider_rate_limit_returns_429_not_500(self, mock_send, mock_predict, mock_get_cache,):
         mock_send.side_effect = make_fake_rate_limit_error()
 
         response = client.post("/v1/completions", json={"prompt": "test prompt"})
@@ -105,14 +115,24 @@ class TestCompletions:
         assert response.status_code == 429
         assert "retry" in response.json()["detail"].lower()
 
+    @patch("src.api.main.get_cached_response", return_value=None)
+    @patch("src.api.main.store_cached_response")
     @patch("src.api.main.log_request")
     @patch("src.api.main.should_verify", return_value=True)
     @patch("src.api.main.verify_response")
     @patch("src.api.main.send_request")
     @patch("src.api.main.predict_tier", return_value=1)
     def test_verification_rate_limit_does_not_fail_whole_request(
-        self, mock_predict, mock_send, mock_verify, mock_should_verify, mock_log
-    ):
+    self,
+    mock_predict,
+    mock_send,
+    mock_verify,
+    mock_should_verify,
+    mock_log,
+    mock_store_cache,
+    mock_get_cache,
+):
+    
         """If only the verification call hits a rate limit, the primary
         answer should still be returned rather than failing the request."""
         mock_send.return_value = make_fake_response()
