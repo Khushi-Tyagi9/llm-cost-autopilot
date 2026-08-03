@@ -14,7 +14,7 @@ from src.models.router_client import send_request
 from src.models.config import GROQ_PREMIUM
 from src.verification.judge import verify_response
 from src.verification.scheduler import should_verify
-from src.logging.db import init_db, log_request, get_connection
+from src.logging.db import init_db, log_request, get_connection, get_cached_response, store_cached_response
 
 app = FastAPI(title="LLM Cost Autopilot", version="0.1.0")
 
@@ -68,7 +68,18 @@ def run_verification_and_log(tier: int, response, request_prompt: str, config: d
 def create_completion(request: CompletionRequest, background_tasks: BackgroundTasks):
     if not request.prompt or not request.prompt.strip():
         raise HTTPException(status_code=400, detail="Prompt cannot be empty")
-
+    cached = get_cached_response(request.prompt)
+    if cached:
+        return CompletionResponse(
+            text=cached["text"],
+            tier=cached["tier"],
+            model_id=cached["model_id"],
+            provider=cached["provider"],
+            cost=0.0,  # cache hit - no new API call made
+            latency=0.001,
+            verified=False,
+            escalated=None,
+        )
     config = load_routing_config()
 
     tier = predict_tier(request.prompt)
@@ -86,7 +97,7 @@ def create_completion(request: CompletionRequest, background_tasks: BackgroundTa
             status_code=429,
             detail="Provider rate limit reached. Please retry shortly."
         )
-
+    store_cached_response(request.prompt, response.text, tier, response.model_id, response.provider, response.cost)
     # Verification and logging happen AFTER this function returns the
     # response to the user - they never wait for it.
     override = routing_tier if routing_tier != tier else None

@@ -46,6 +46,18 @@ def init_db():
                 routing_override TEXT
             )
         """)
+        conn.execute("""
+            CREATE TABLE IF NOT EXISTS response_cache (
+                prompt_hash TEXT PRIMARY KEY,
+                response_text TEXT NOT NULL,
+                tier INTEGER NOT NULL,
+                model_id TEXT NOT NULL,
+                provider TEXT NOT NULL,
+                original_cost REAL NOT NULL,
+                cached_at REAL NOT NULL
+            )
+        """)
+        
         conn.commit()
 
 
@@ -83,4 +95,34 @@ def log_request(tier: int, response, verification: dict | None, prompt: str, rou
             verification["judge_cost"] if verification else None,
             routing_override,
         ))
+        conn.commit()
+
+def get_cached_response(prompt: str):
+    """Returns a cached response dict if this exact prompt was seen
+    before, or None if it's not cached."""
+    prompt_hash = _hash_prompt(prompt)
+    with get_connection() as conn:
+        row = conn.execute(
+            "SELECT response_text, tier, model_id, provider, original_cost FROM response_cache WHERE prompt_hash = ?",
+            (prompt_hash,)
+        ).fetchone()
+    if row is None:
+        return None
+    return {
+        "text": row[0],
+        "tier": row[1],
+        "model_id": row[2],
+        "provider": row[3],
+        "original_cost": row[4],
+    }
+
+
+def store_cached_response(prompt: str, text: str, tier: int, model_id: str, provider: str, cost: float):
+    prompt_hash = _hash_prompt(prompt)
+    with get_connection() as conn:
+        conn.execute("""
+            INSERT OR REPLACE INTO response_cache
+            (prompt_hash, response_text, tier, model_id, provider, original_cost, cached_at)
+            VALUES (?, ?, ?, ?, ?, ?, ?)
+        """, (prompt_hash, text, tier, model_id, provider, cost, time.time()))
         conn.commit()
