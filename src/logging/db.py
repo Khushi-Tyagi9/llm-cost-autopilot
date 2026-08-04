@@ -43,7 +43,8 @@ def init_db():
                 escalated INTEGER NOT NULL DEFAULT 0,
                 premium_cost REAL,
                 judge_cost REAL,
-                routing_override TEXT
+                routing_override TEXT,
+                classifier_confidence REAL
             )
         """)
         conn.execute("""
@@ -57,43 +58,36 @@ def init_db():
                 cached_at REAL NOT NULL
             )
         """)
-        
+        cursor = conn.execute("PRAGMA table_info(requests)")
+        columns = {row[1] for row in cursor.fetchall()}
+
+        if "classifier_confidence" not in columns:
+           conn.execute("""
+           ALTER TABLE requests
+           ADD COLUMN classifier_confidence REAL
+        """)
         conn.commit()
 
 
-def log_request(tier: int, response, verification: dict | None, prompt: str, routing_override: str | None = None):
-    """
-    response: a Response object from send_request()
-    verification: dict from verify_response(), or None if not verified
-    routing_override: if the actual routing differed from the classifier's
-    raw tier prediction (e.g. "2b" for ungrounded-factual Tier 2 queries
-    routed to premium), record what override was applied. None if the
-    classifier's tier was used as-is.
-    """
+def log_request(tier: int, response, verification: dict | None, prompt: str, routing_override: str | None = None, classifier_confidence: float | None = None):
     with get_connection() as conn:
         conn.execute("""
             INSERT INTO requests (
                 timestamp, prompt_hash, tier, model_id, provider,
                 cost, latency, input_tokens, output_tokens,
                 verified, judge_verdict, escalated, premium_cost, judge_cost,
-                routing_override
-            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                routing_override, classifier_confidence
+            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
         """, (
-            time.time(),
-            _hash_prompt(prompt),
-            tier,
-            response.model_id,
-            response.provider,
-            response.cost,
-            response.latency,
-            response.input_tokens,
-            response.output_tokens,
+            time.time(), _hash_prompt(prompt), tier, response.model_id, response.provider,
+            response.cost, response.latency, response.input_tokens, response.output_tokens,
             1 if verification else 0,
             verification["judge_verdict"] if verification else None,
             1 if (verification and verification["escalate"]) else 0,
             verification["premium_cost"] if verification else None,
             verification["judge_cost"] if verification else None,
             routing_override,
+            classifier_confidence,
         ))
         conn.commit()
 

@@ -50,7 +50,19 @@ def predict_tier(prompt: str) -> int:
     return int(clf.predict(X)[0])
 
 
-def run_verification_and_log(tier: int, response, request_prompt: str, config: dict, routing_override: str | None = None):
+def predict_tier_with_confidence(prompt: str) -> tuple[int, float]:
+    X = np.array(featurize([prompt]))
+    if needs_scaler:
+        X = scaler.transform(X)
+    tier = int(clf.predict(X)[0])
+    if hasattr(clf, "predict_proba"):
+        confidence = float(max(clf.predict_proba(X)[0]))
+    else:
+        confidence = 1.0  # model doesn't support probability estimates
+    return tier, confidence
+
+
+def run_verification_and_log(tier: int, response, request_prompt: str, config: dict, routing_override: str | None = None, classifier_confidence: float | None = None):
     verification = None
     sample_rate = config["verification"]["sample_rate"]
 
@@ -62,7 +74,7 @@ def run_verification_and_log(tier: int, response, request_prompt: str, config: d
             except RateLimitError:
                 verification = None
 
-    log_request(tier, response, verification, request_prompt, routing_override=routing_override)
+    log_request(tier, response, verification, request_prompt, routing_override=routing_override, classifier_confidence=classifier_confidence)
 
 
 @app.post("/v1/completions", response_model=CompletionResponse)
@@ -83,7 +95,7 @@ def create_completion(request: CompletionRequest, background_tasks: BackgroundTa
         )
     config = load_routing_config()
 
-    tier = predict_tier(request.prompt)
+    tier, classifier_confidence = predict_tier_with_confidence(request.prompt)
 
     routing_tier = tier
     if tier == 2 and is_ungrounded_factual_query(request.prompt):
@@ -124,20 +136,29 @@ def list_models():
 @app.get("/v1/stats")
 def get_stats():
     with get_connection() as conn:
-        cursor = conn.execute("""
+        row = conn.execute("""
             SELECT
                 COUNT(*) as total_requests,
                 SUM(cost) as total_cost,
                 AVG(cost) as avg_cost_per_request,
-                SUM(escalated) as total_escalated
+                SUM(escalated) as total_escalated,
+                AVG(classifier_confidence) as avg_classifier_confidence
             FROM requests
-        """)
-        row = cursor.fetchone()
+        """).fetchone()
+
+        cache_row = conn.execute("SELECT COUNT(*) FROM response_cache").fetchone()
+        total_cache_entries = cache_row[0]
+
+        cache_hits_row = conn.execute("SELECT COUNT(*) FROM requests WHERE cost = 0").fetchone()
+        estimated_cache_hits = cache_hits_row[0]
+
         return {
             "total_requests": row[0],
             "total_cost": row[1],
             "avg_cost_per_request": row[2],
             "total_escalated": row[3],
+            "avg_classifier_confidence": row[4],
+            "unique_cached_prompts": total_cache_entries,
         }
 
 
