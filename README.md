@@ -110,9 +110,8 @@ llm-cost-autopilot/
     logging/                 - Request logging and response caching
     router/                  - Configuration resolution
     api/                     - FastAPI application
-  scripts/                     - Load testing and investigation tooling
+  scripts/                     - Load testing, investigation tooling, and dataset generation (build_dataset.py)
   tests/                       - 94 automated tests
-  build_dataset.py             - Regenerates the labeled training dataset
   Dockerfile
 ```
 
