@@ -144,7 +144,3 @@ This mitigation reduces exposure to the specific failure pattern identified abov
 - Fully independent verification judge using a third model not involved in producing either compared response
 - Automatic provider failover if a primary provider is unreachable
 - Multi-tenant support with per-caller authentication and usage limits
-
-## License
-
-MIT
