@@ -15,7 +15,7 @@ from src.models.router_client import send_request
 from src.models.config import GROQ_PREMIUM
 from src.verification.judge import verify_response
 from src.verification.scheduler import should_verify
-from src.logging.db import init_db, log_request, get_connection, get_cached_response, store_cached_response
+from src.logging.db import init_db, log_request, get_connection, get_cached_response, store_cached_response, log_cache_hit, log_error
 
 app = FastAPI(title="LLM Cost Autopilot", version="0.1.0")
 
@@ -83,6 +83,10 @@ def create_completion(request: CompletionRequest, background_tasks: BackgroundTa
         raise HTTPException(status_code=400, detail="Prompt cannot be empty")
     cached = get_cached_response(request.prompt)
     if cached:
+        background_tasks.add_task(
+        log_cache_hit, request.prompt, cached["tier"], cached["model_id"],
+        cached["provider"], cached["original_cost"]
+    )
         return CompletionResponse(
             text=cached["text"],
             tier=cached["tier"],
@@ -106,10 +110,11 @@ def create_completion(request: CompletionRequest, background_tasks: BackgroundTa
     try:
         response = send_request(request.prompt, model_config)
     except RateLimitError:
-        raise HTTPException(
-            status_code=429,
-            detail="Provider rate limit reached. Please retry shortly."
-        )
+        background_tasks.add_task(log_error, request.prompt, "rate_limit", tier)
+        raise HTTPException(status_code=429, detail="Provider rate limit reached. Please retry shortly.")
+    except Exception as e:
+        background_tasks.add_task(log_error, request.prompt, str(e)[:500], tier)
+        raise HTTPException(status_code=502, detail="Upstream provider error.")
     store_cached_response(request.prompt, response.text, tier, response.model_id, response.provider, response.cost)
     # Verification and logging happen AFTER this function returns the
     # response to the user - they never wait for it.
@@ -137,20 +142,11 @@ def list_models():
 def get_stats():
     with get_connection() as conn:
         row = conn.execute("""
-            SELECT
-                COUNT(*) as total_requests,
-                SUM(cost) as total_cost,
-                AVG(cost) as avg_cost_per_request,
-                SUM(escalated) as total_escalated,
-                AVG(classifier_confidence) as avg_classifier_confidence
-            FROM requests
+            SELECT COUNT(*), SUM(cost), AVG(cost), SUM(escalated), AVG(classifier_confidence)
+            FROM requests WHERE event_type = 'completion'
         """).fetchone()
-
-        cache_row = conn.execute("SELECT COUNT(*) FROM response_cache").fetchone()
-        total_cache_entries = cache_row[0]
-
-        cache_hits_row = conn.execute("SELECT COUNT(*) FROM requests WHERE cost = 0").fetchone()
-        estimated_cache_hits = cache_hits_row[0]
+        cache_hits = conn.execute("SELECT COUNT(*) FROM requests WHERE event_type = 'cache_hit'").fetchone()[0]
+        total_errors = conn.execute("SELECT COUNT(*) FROM requests WHERE event_type = 'error'").fetchone()[0]
 
         return {
             "total_requests": row[0],
@@ -158,8 +154,10 @@ def get_stats():
             "avg_cost_per_request": row[2],
             "total_escalated": row[3],
             "avg_classifier_confidence": row[4],
-            "unique_cached_prompts": total_cache_entries,
+            "cache_hits": cache_hits,
+            "errors": total_errors,
         }
+        
 
 
 @app.put("/v1/routing-config")

@@ -44,7 +44,9 @@ def init_db():
                 premium_cost REAL,
                 judge_cost REAL,
                 routing_override TEXT,
-                classifier_confidence REAL
+                classifier_confidence REAL,
+                event_type TEXT NOT NULL DEFAULT 'completion',
+                error_message TEXT 
             )
         """)
         conn.execute("""
@@ -66,6 +68,10 @@ def init_db():
            ALTER TABLE requests
            ADD COLUMN classifier_confidence REAL
         """)
+        if "event_type" not in columns:
+           conn.execute("ALTER TABLE requests ADD COLUMN event_type TEXT NOT NULL DEFAULT 'completion'")
+        if "error_message" not in columns:
+           conn.execute("ALTER TABLE requests ADD COLUMN error_message TEXT")
         conn.commit()
 
 
@@ -119,4 +125,27 @@ def store_cached_response(prompt: str, text: str, tier: int, model_id: str, prov
             (prompt_hash, response_text, tier, model_id, provider, original_cost, cached_at)
             VALUES (?, ?, ?, ?, ?, ?, ?)
         """, (prompt_hash, text, tier, model_id, provider, cost, time.time()))
+        conn.commit()
+        
+def log_cache_hit(prompt: str, tier: int, model_id: str, provider: str, original_cost: float):
+    with get_connection() as conn:
+        conn.execute("""
+            INSERT INTO requests (
+                timestamp, prompt_hash, tier, model_id, provider,
+                cost, latency, input_tokens, output_tokens,
+                verified, escalated, event_type
+            ) VALUES (?, ?, ?, ?, ?, 0, 0.001, 0, 0, 0, 0, 'cache_hit')
+        """, (time.time(), _hash_prompt(prompt), tier, model_id, provider))
+        conn.commit()
+
+
+def log_error(prompt: str, error_message: str, tier: int | None = None):
+    with get_connection() as conn:
+        conn.execute("""
+            INSERT INTO requests (
+                timestamp, prompt_hash, tier, model_id, provider,
+                cost, latency, input_tokens, output_tokens,
+                verified, escalated, event_type, error_message
+            ) VALUES (?, ?, ?, 'n/a', 'n/a', 0, 0, 0, 0, 0, 0, 'error', ?)
+        """, (time.time(), _hash_prompt(prompt), tier if tier is not None else -1, error_message))
         conn.commit()
