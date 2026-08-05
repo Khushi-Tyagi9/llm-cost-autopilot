@@ -119,7 +119,7 @@ def create_completion(request: CompletionRequest, background_tasks: BackgroundTa
     # Verification and logging happen AFTER this function returns the
     # response to the user - they never wait for it.
     override = routing_tier if routing_tier != tier else None
-    background_tasks.add_task(run_verification_and_log, tier, response, request.prompt, config, override)
+    background_tasks.add_task(run_verification_and_log, tier, response, request.prompt, config, override, classifier_confidence)
 
     return CompletionResponse(
         text=response.text,
