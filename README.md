@@ -1,6 +1,7 @@
-LLM Cost Autopilot
+**LLM Cost Autopilot**
 
 ![Tests](https://github.com/Khushi-Tyagi9/llm-cost-autopilot/actions/workflows/test.yml/badge.svg)
+
 
 An intelligent routing layer for LLM applications that classifies incoming requests by complexity, routes each one to the most cost-appropriate model, and continuously verifies output quality, cutting inference costs without sacrificing reliability.
 
@@ -17,6 +18,9 @@ Most applications that use LLMs send every request to the same model, regardless
 | Escalation rate (sampled, in-production traffic) | 16.4% (9 of 55 verified requests) |
 | Test coverage | **94 automated tests**, CI-verified |
 
+**Live dashboard reflecting the results above**
+
+![Dashboard](docs/dashboard.png)
 **How it works**
 
 ```mermaid
