@@ -1,15 +1,14 @@
-**LLM Cost Autopilot**
+# LLM Cost Autopilot
 
 ![Tests](https://github.com/Khushi-Tyagi9/llm-cost-autopilot/actions/workflows/test.yml/badge.svg)
 
-
 An intelligent routing layer for LLM applications that classifies incoming requests by complexity, routes each one to the most cost-appropriate model, and continuously verifies output quality, cutting inference costs without sacrificing reliability.
 
-**Overview**
+## Overview
 
 Most applications that use LLMs send every request to the same model, regardless of whether the task is trivial or complex. LLM Cost Autopilot solves this by inserting an intelligent routing layer between the application and the model providers: a lightweight, non-LLM classifier scores request complexity in milliseconds, a configurable router sends the request to the appropriate model tier, and an asynchronous verification loop checks that routing decisions are producing quality output, logging any that aren't.
 
-**Results**
+## Results
 
 | Metric | Result |
 |---|---|
@@ -18,26 +17,27 @@ Most applications that use LLMs send every request to the same model, regardless
 | Escalation rate (sampled, in-production traffic) | 16.4% (9 of 55 verified requests) |
 | Test coverage | **94 automated tests**, CI-verified |
 
-**Live dashboard reflecting the results above**
+## Live dashboard reflecting the results above:
 
 ![Dashboard](docs/dashboard.png)
-**How it works**
+
+## How it works
 
 ```mermaid
 flowchart TD
-    A[Request] --> B{Exact-match<br/>cached?}
-    B -->|Yes| C[Return cached response<br/>zero cost]
-    B -->|No| D[Complexity Classifier<br/>lightweight, no LLM call]
-    D --> E{Router<br/>routing.yaml}
+    A[Request] --> B{Exact-match cached?}
+    B -->|Yes| C[Return cached response, zero cost]
+    B -->|No| D[Complexity Classifier, lightweight, no LLM call]
+    D --> E{Router - routing.yaml}
     E -->|Tier 1 / grounded Tier 2| F[Cheap model]
     E -->|Tier 2b: ungrounded factual| G[Premium model]
     E -->|Tier 3: complex| G
-    F --> H{Sampled verification<br/>~15% of eligible traffic}
+    F --> H{Sampled verification, ~15% of eligible traffic}
     G --> I[Response returned to caller]
     F --> I
     H -->|Diverges from premium| J[Logged as escalated]
     H -->|Matches| K[Logged as verified]
-    I --> L[(SQLite log:<br/>cost, tier, confidence,<br/>routing_override)]
+    I --> L[(SQLite log: cost, tier, confidence, routing_override)]
     L --> M[Grafana dashboard]
 ```
 
@@ -57,7 +57,7 @@ flowchart TD
 
 **Deployment.** The full system is exposed as a REST API via FastAPI and packaged as a Docker container for portable, one-command deployment.
 
-**API**
+## API
 
 | Endpoint | Description |
 |---|---|
@@ -69,11 +69,11 @@ flowchart TD
 
 Interactive API documentation is available at `/docs` once running.
 
-**Tech stack**
+## Tech stack
 
-Python · FastAPI · scikit-learn · SQLite · Grafana · Docker · Groq / Anthropic / OpenAI
+Python, FastAPI, scikit-learn, SQLite, Grafana, Docker, Groq / Anthropic / OpenAI
 
-**Getting started**
+## Getting started
 
 ```bash
 pip install -r requirements.txt
@@ -94,29 +94,29 @@ Run the test suite:
 pytest tests/ -v
 ```
 
-**Project structure**
+## Project structure
 
 ```
 llm-cost-autopilot/
-├── config/
-│   └── routing.yaml            # Model definitions, tier routing, verification settings
-├── data/
-│   ├── prompts_labeled.csv     # Training dataset for the complexity classifier
-│   └── *_results.json          # Raw output from the investigations described below
-├── src/
-│   ├── models/                 # Provider-agnostic model interface (Groq, Anthropic, OpenAI)
-│   ├── classifier/              # Complexity classification
-│   ├── verification/            # Asynchronous quality verification
-│   ├── logging/                 # Request logging and response caching
-│   ├── router/                  # Configuration resolution
-│   └── api/                     # FastAPI application
-├── scripts/                     # Load testing and investigation tooling
-├── tests/                       # 94 automated tests
-├── build_dataset.py             # Regenerates the labeled training dataset
-└── Dockerfile
+  config/
+    routing.yaml            - Model definitions, tier routing, verification settings
+  data/
+    prompts_labeled.csv     - Training dataset for the complexity classifier
+    *_results.json          - Raw output from the investigations described below
+  src/
+    models/                 - Provider-agnostic model interface (Groq, Anthropic, OpenAI)
+    classifier/              - Complexity classification
+    verification/            - Asynchronous quality verification
+    logging/                 - Request logging and response caching
+    router/                  - Configuration resolution
+    api/                     - FastAPI application
+  scripts/                     - Load testing and investigation tooling
+  tests/                       - 94 automated tests
+  build_dataset.py             - Regenerates the labeled training dataset
+  Dockerfile
 ```
 
-**Investigating a real reliability gap**
+## Investigating a real reliability gap
 
 An initial verification comparison tested an LLM-as-judge approach against a similarity-based (TF-IDF) approach on 30 prompts mixing all three complexity tiers together. LLM-judge correctly cleared 100% of accurate responses, versus a 30% false-flag rate for similarity-based scoring. The 0% escalation rate on this mixed sample masked a meaningful difference by tier, though. A follow-up check isolating 30 Tier 2 (moderate-complexity) prompts specifically found a **23.3% escalation rate**.
 
@@ -131,7 +131,7 @@ To quantify the second pattern, the same niche factual query was run 10 times ag
 
 This mitigation reduces exposure to the specific failure pattern identified above; it does not guarantee factual correctness, since even the premium model fabricated on the same query. This is treated as a disclosed, scoped limitation rather than a solved problem, see Roadmap.
 
-**Design notes**
+## Design notes
 
 **Provider-agnostic by design.** `src/router/config_loader.py` builds model configurations directly from `routing.yaml`, including provider, pricing, and capability tier, so no code changes are required to add a new model on an already-integrated provider. Groq is verified at production scale (1,000+ live requests); Claude and OpenAI adapters are implemented, unit-tested, and wired into routing, but not yet verified against a live call.
 
@@ -139,9 +139,13 @@ This mitigation reduces exposure to the specific failure pattern identified abov
 
 **Caching and cost.** Exact-match caching returns repeated prompts at zero cost. Actual cache hit rate depends on real traffic repetition and is not a property of the routing logic itself.
 
-**Roadmap**
+## Roadmap
 
 - Automated classifier retraining from verification feedback: deliberately not built; investigation showed that raw escalations conflate stylistic differences with genuine errors, making blind automated retraining risky without a human review step
 - Fully independent verification judge using a third model not involved in producing either compared response
 - Automatic provider failover if a primary provider is unreachable
 - Multi-tenant support with per-caller authentication and usage limits
+
+## License
+
+MIT
